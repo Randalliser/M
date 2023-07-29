@@ -1,59 +1,52 @@
 let
-    func = (MasterPath as text, BlobPath as text) =>
+    getCodeFromGithub = (masterPath as text, blobPath as text) =>
         let
-            /* debug parameters
-    MasterPath = "https://github.com/ImkeF/RM/tree/master",
-    BlobPath = "https://github.com/ImkeF/RM/blob/master",
-*/
-            FileEndings = {".pq", ".m"},
-            Source = Web.Page(Web.Contents(MasterPath)),
-            Data0 = Source{0}[Data],
-            ColumnFunctionNames = Table.ColumnNames(Data0){1},
-            #"Filtered Rows" = Table.SelectRows(
-                Data0,
+            /*  debug parameters
+                masterPath = "https://github.com/ImkeF/RM/tree/master",
+                blobPath = "https://github.com/ImkeF/RM/blob/master",
+            */
+            fileEndings = {".pq", ".m"},
+            source = Web.Page(Web.Contents(masterPath)),
+            data0 = source{0}[Data],
+            columnFunctionNames = Table.ColumnNames(data0){1},
+            filteredRows = Table.SelectRows(
+                data0,
                 each
                     List.AnyTrue(
                         List.Transform(
-                            FileEndings, (list) => Text.EndsWith(Record.Field(_, ColumnFunctionNames), list)
+                            fileEndings, (list) => Text.EndsWith(Record.Field(_, columnFunctionNames), list)
                         )
                     )
             ),
-            CreateURL = Table.AddColumn(
-                #"Filtered Rows", "URLFunctionCode", each BlobPath & "/" & Record.Field(_, ColumnFunctionNames)
+            createURL = Table.AddColumn(
+                filteredRows, "URLFunctionCode", each blobPath & "/" & Record.Field(_, columnFunctionNames)
             ),
-            GetCode = Table.AddColumn(
-                CreateURL,
+            getCode = Table.AddColumn(
+                createURL,
                 "GetCode",
                 each Text.Combine(Web.Page(Web.Contents([URLFunctionCode]))[Data]{0}[Column2], "#(lf)")
             ),
-            #"Removed Other Columns" = Table.SelectColumns(GetCode, {"GetCode", ColumnFunctionNames}),
-            #"Renamed Columns" = Table.RenameColumns(#"Removed Other Columns", {{ColumnFunctionNames, "Name"}}),
-            CleanFunctionName = Table.TransformColumns(
-                #"Renamed Columns",
+            removedOtherColumns = Table.SelectColumns(getCode, {"GetCode", columnFunctionNames}),
+            renamedColumns = Table.RenameColumns(removedOtherColumns, {{columnFunctionNames, "Name"}}),
+            cleanFunctionName = Table.TransformColumns(
+                renamedColumns,
                 {{"Name", each Text.BeforeDelimiter(_, ".", {0, RelativePosition.FromEnd}), type text}}
             ),
-            Evaluate = Table.AddColumn(CleanFunctionName, "TestCode", each Expression.Evaluate([GetCode], #shared))
+            evaluate = Table.AddColumn(cleanFunctionName, "TestCode", each Expression.Evaluate([GetCode], #shared))
         in
-            Evaluate,
+            evaluate,
     documentation = [
-        Documentation.Name = " fnGetCodeFromGithub
-",
-        Documentation.Description = " Fetches function code from GitHub
-",
-        Documentation.Category = " Accessing data
-",
-        Documentation.Author = " Imke Feldmann: www.TheBIccountant.com
-",
+        Documentation.Name = " fngetCodeFromGithub#(lf)",
+        Documentation.Description = " Fetches function code from GitHub#(lf)",
+        Documentation.Category = " Accessing data#(lf)",
+        Documentation.Author = " Imke Feldmann: www.TheBIccountant.com#(lf)",
         Documentation.Examples = {
             [
-                Description = " 1) Path to repo main page 2) Path to the single files
-",
-                Code = " Check this blogpost: http://wp.me/p6lgsG-Gx explaining how it works
- ",
-                Result = " 
-"
+                Description = " 1) Path to repo main page 2) Path to the single files#(lf)",
+                Code = " Check this blogpost: http://wp.me/p6lgsG-Gx explaining how it works#(lf)",
+                Result = "#(lf)"
             ]
         }
     ]
 in
-    Value.ReplaceType(func, Value.ReplaceMetadata(Value.Type(func), documentation))
+    Value.ReplaceType(getCodeFromGithub, Value.ReplaceMetadata(Value.Type(getCodeFromGithub), documentation))
